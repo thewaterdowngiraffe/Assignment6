@@ -105,6 +105,9 @@ public class CoolBot2024 implements BattleShipBot {
         // This is needed if you are trying to improve the performance of your code
 
         random = new Random(0xAAAAAAAA);   // Needed for random shooter - not required for more systematic approaches
+
+
+        // keep this it
         if(remainingShips.isEmpty()){
             for(int ship: battleShip.getShipSizes()) {
                 remainingShips.add(ship);
@@ -144,6 +147,7 @@ public class CoolBot2024 implements BattleShipBot {
         // on ship kill run this to regenerate queue
         changeGrid();
 
+        //testing stuff
         for(int[] arr: targetQueue){
             System.out.println(Arrays.toString(arr));
         }
