@@ -1,7 +1,12 @@
 
 import battleship.*;
 
+import javax.sql.rowset.serial.SQLOutputImpl;
 import java.awt.Point;
+import java.security.PublicKey;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -29,6 +34,50 @@ public class CoolBot2024 implements BattleShipBot {
     private BattleShip2 battleShip;
     private Random random;
 
+    private List<Integer> remainingShips = new ArrayList<Integer>();
+
+    private List<int[]> targetQueue = new ArrayList<int[]>();
+
+
+
+    private int getMinShipRemaining(){
+        int minimum = remainingShips.get(0);
+        for (int i = 1; i < remainingShips.size(); i++) {
+            System.out.println(remainingShips.get(i));
+            if (minimum > remainingShips.get(i))
+                minimum = remainingShips.get(i);
+        }
+        System.out.println(minimum);
+        return minimum;
+    }
+
+
+    private void changeGrid(){
+
+        boolean resume = true;
+        int spacing = getMinShipRemaining();
+        int[] nextshot = targetQueue.get(0);
+        targetQueue.clear();
+
+        for (int i = nextshot[0]; i < gameSize; i++) {
+            int target = resume? nextshot[1] : i%spacing;
+            resume = false;
+
+            for (int j = target; j < gameSize; j+= (spacing)) {
+                int[] tmp = new int[]{i,j};
+                this.targetQueue.add(tmp);
+            }
+        }
+    }
+    private void makeGrid(){
+        int spacing = getMinShipRemaining();
+        for (int i = 0; i < gameSize; i++) {
+            for (int j = i%spacing; j < gameSize; j+= (spacing)) {
+                int[] tmp = new int[]{i,j};
+                this.targetQueue.add(tmp);
+            }
+        }
+    }
 
 
     /**
@@ -38,13 +87,49 @@ public class CoolBot2024 implements BattleShipBot {
      */
     @Override
     public void initialize(BattleShip2 b) {
+
+        remainingShips = new ArrayList<Integer>();
+        targetQueue = new ArrayList<int[]>();
+
+
         battleShip = b;
         gameSize = b.BOARD_SIZE;
-        System.out.println(gameSize);
+        System.out.println(b);
+
+
+
         // Need to use a Seed if you want the same results to occur from run to run
         // This is needed if you are trying to improve the performance of your code
 
         random = new Random(0xAAAAAAAA);   // Needed for random shooter - not required for more systematic approaches
+        if(remainingShips.isEmpty()){
+            for(int ship: battleShip.getShipSizes()) {
+                remainingShips.add(ship);
+            }
+        }
+
+
+
+        makeGrid();
+        System.out.println("\n\n");
+        for (int i = 0; i < 12; i++) {
+            this.targetQueue.remove(0);
+        }
+
+        System.out.println(remainingShips);
+        remainingShips.removeIf(e -> e.equals(getMinShipRemaining()));
+        System.out.println(remainingShips);
+
+        System.out.println(Arrays.toString(targetQueue.get(0)));
+
+        changeGrid();
+
+        for(int[] arr: targetQueue){
+            System.out.println(Arrays.toString(arr));
+        }
+
+
+
     }// end initialize()
 
 
@@ -61,6 +146,7 @@ public class CoolBot2024 implements BattleShipBot {
 
         // Will return true if we hot a ship
         boolean hit = battleShip.shoot(new Point(x,y));
+
     }// end fireShot()
 
 
