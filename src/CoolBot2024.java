@@ -1,9 +1,7 @@
 
 import battleship.*;
 
-import javax.sql.rowset.serial.SQLOutputImpl;
 import java.awt.Point;
-import java.security.PublicKey;
 import java.util.*;
 
 /**
@@ -30,6 +28,8 @@ public class CoolBot2024 implements BattleShipBot {
     private int gameSize;
     private BattleShip2 battleShip;
     private Random random;
+
+    private int sunkShipCount;
 
     private List<Integer> remainingShips = new ArrayList<Integer>();
 
@@ -111,6 +111,8 @@ public class CoolBot2024 implements BattleShipBot {
                 remainingShips.add(ship);
             }
         }
+        sunkShipCount = battleShip.numberOfShipsSunk();
+
 
 
         // run at start
