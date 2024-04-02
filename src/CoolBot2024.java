@@ -30,6 +30,7 @@ public class CoolBot2024 implements BattleShipBot {
     private Random random;
 
 
+
     /**
      * Constructor keeps a copy of the BattleShip instance
      * Create instances of any Data Structures and initialize any variables here
@@ -39,7 +40,7 @@ public class CoolBot2024 implements BattleShipBot {
     public void initialize(BattleShip2 b) {
         battleShip = b;
         gameSize = b.BOARD_SIZE;
-
+        System.out.println(gameSize);
         // Need to use a Seed if you want the same results to occur from run to run
         // This is needed if you are trying to improve the performance of your code
 
