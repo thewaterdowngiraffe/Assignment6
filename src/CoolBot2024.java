@@ -4,10 +4,7 @@ import battleship.*;
 import javax.sql.rowset.serial.SQLOutputImpl;
 import java.awt.Point;
 import java.security.PublicKey;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * <h1></h1>
@@ -37,6 +34,7 @@ public class CoolBot2024 implements BattleShipBot {
     private List<Integer> remainingShips = new ArrayList<Integer>();
 
     private List<int[]> targetQueue = new ArrayList<int[]>();
+    private Point shotTaken;
 
 
 
@@ -165,11 +163,18 @@ public class CoolBot2024 implements BattleShipBot {
     @Override
     public void fireShot() {
 
-        int x = random.nextInt(gameSize);
-        int y = random.nextInt(gameSize);
+        if(!targetQueue.isEmpty()) {
+            int[] next = targetQueue.remove(0);
+            Point shot = new Point(next[0], next[1]);
+            boolean hit = battleShip.shoot(shot);
+
+            if (hit) {
+
+            }
+        }
 
         // Will return true if we hot a ship
-        boolean hit = battleShip.shoot(new Point(x,y));
+
 
     }// end fireShot()
 
@@ -181,6 +186,6 @@ public class CoolBot2024 implements BattleShipBot {
      */
     @Override
     public String getAuthors() {
-        return "Mark Yendt (CSAIT Professor),\n Luca Quacquarelli (COMP-10205 Student),\n Keegan (COMP-10205 Student)";
+        return "Mark Yendt (CSAIT Professor\nLuca Quacquarelli (COMP-10205 Student\nKeegan (COMP-10205 Student)";
     }// end getAuthors()
 }// end CoolBot2024
