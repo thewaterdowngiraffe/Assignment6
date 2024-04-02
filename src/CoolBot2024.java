@@ -43,27 +43,30 @@ public class CoolBot2024 implements BattleShipBot {
     private int getMinShipRemaining(){
         int minimum = remainingShips.get(0);
         for (int i = 1; i < remainingShips.size(); i++) {
-            System.out.println(remainingShips.get(i));
             if (minimum > remainingShips.get(i))
                 minimum = remainingShips.get(i);
         }
-        System.out.println(minimum);
         return minimum;
     }
 
 
     private void changeGrid(){
-
+        // this will regenerate the remaining target grid, there is some room for improvement, but im to lazy to do that atm
+        // we need to make a prune function to check all queue for repeat moves, these will need to be removed
         boolean resume = true;
         int spacing = getMinShipRemaining();
         int[] nextshot = targetQueue.get(0);
         targetQueue.clear();
+        nextshot[0] = nextshot[0]-(spacing-1) >= 0? nextshot[0]-(spacing-1): 0;
 
-        for (int i = nextshot[0]; i < gameSize; i++) {
-            int target = resume? nextshot[1] : i%spacing;
+        for (int i = nextshot[0]; i <= gameSize; i++) {
+            int target = resume?
+                    nextshot[1] - (spacing-1) >=0 ? 0 : nextshot[1] - (spacing-1)
+                    :
+                    i%spacing;
             resume = false;
 
-            for (int j = target; j < gameSize; j+= (spacing)) {
+            for (int j = target; j <= gameSize; j+= (spacing)) {
                 int[] tmp = new int[]{i,j};
                 this.targetQueue.add(tmp);
             }
@@ -71,8 +74,8 @@ public class CoolBot2024 implements BattleShipBot {
     }
     private void makeGrid(){
         int spacing = getMinShipRemaining();
-        for (int i = 0; i < gameSize; i++) {
-            for (int j = i%spacing; j < gameSize; j+= (spacing)) {
+        for (int i = 0; i <= gameSize; i++) {
+            for (int j = i%spacing; j <= gameSize; j+= (spacing)) {
                 int[] tmp = new int[]{i,j};
                 this.targetQueue.add(tmp);
             }
@@ -102,6 +105,9 @@ public class CoolBot2024 implements BattleShipBot {
         // This is needed if you are trying to improve the performance of your code
 
         random = new Random(0xAAAAAAAA);   // Needed for random shooter - not required for more systematic approaches
+
+
+        // keep this it
         if(remainingShips.isEmpty()){
             for(int ship: battleShip.getShipSizes()) {
                 remainingShips.add(ship);
@@ -109,21 +115,39 @@ public class CoolBot2024 implements BattleShipBot {
         }
 
 
-
+        // run at start
         makeGrid();
+
+
+
+        for(int[] arr: targetQueue){
+            System.out.println(Arrays.toString(arr));
+        }
         System.out.println("\n\n");
         for (int i = 0; i < 12; i++) {
             this.targetQueue.remove(0);
         }
+        for(int[] arr: targetQueue){
+            System.out.println(Arrays.toString(arr));
+        }
+        System.out.println("\n\n");
 
         System.out.println(remainingShips);
+
+
+        // this is a test thing to remove the smallest item from the list this is for testing only
+        remainingShips.removeIf(e -> e.equals(getMinShipRemaining()));
         remainingShips.removeIf(e -> e.equals(getMinShipRemaining()));
         System.out.println(remainingShips);
 
         System.out.println(Arrays.toString(targetQueue.get(0)));
 
+
+
+        // on ship kill run this to regenerate queue
         changeGrid();
 
+        //testing stuff
         for(int[] arr: targetQueue){
             System.out.println(Arrays.toString(arr));
         }
