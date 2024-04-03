@@ -34,7 +34,7 @@ public class CoolBot2024 implements BattleShipBot {
     private List<Integer> remainingShips = new ArrayList<Integer>();
 
     private List<int[]> targetQueue = new ArrayList<int[]>();
-    private Point shotTaken;
+    private Set<Point> shotTaken = new HashSet<>();
 
 
 
@@ -75,10 +75,49 @@ public class CoolBot2024 implements BattleShipBot {
         for (int i = 0; i <= gameSize; i++) {
             for (int j = i%spacing; j <= gameSize; j+= (spacing)) {
                 int[] tmp = new int[]{i,j};
-                this.targetQueue.add(tmp);
+                //this.targetQueue.add(tmp);
+
+                if(isTargetValid(tmp)) {
+                    targetQueue.add(tmp);
+                }
+            }
+        }
+    }// end makeGrid()
+
+    private boolean isTargetValid(int[] tmp) {
+        Point shot = new Point(tmp[0], tmp[1]);
+        return isPointValid(shot.x, shot.y) && !shortAttempted(shot);
+    }// end isTargetValid()
+
+    private boolean shortAttempted(Point shot) {
+        return shotTaken.contains(shot);
+    }// end shotAttempted()
+
+
+    private boolean isPointValid(int x, int y) {
+        return x >= 0 && x < gameSize && y >= 0 && y < gameSize;
+    }// end isPointValid()
+
+
+    private void addTargetHit(Point shot) {
+        int[][] shotDirections = {{-1,0}, {1,0}, {0,-1}, {0,1}};
+
+        for (int[] direction : shotDirections) {
+            int nextX = shot.x + direction[0];
+            int nextY = shot.y + direction[1];
+            if(isPointValid(nextX, nextY) && !shotTaken.contains(new Point(nextX, nextY))) {
+                targetQueue.add(new int[]{nextX, nextY});
             }
         }
     }
+
+    private void updateOnSunkShip() {
+        int shrinkCount = battleShip.numberOfShipsSunk();
+        if (shrinkCount > sunkShipCount) {
+            sunkShipCount = shrinkCount;
+        }
+    }
+
 
 
     /**
@@ -103,6 +142,7 @@ public class CoolBot2024 implements BattleShipBot {
         // This is needed if you are trying to improve the performance of your code
 
         random = new Random(0xAAAAAAAA);   // Needed for random shooter - not required for more systematic approaches
+        sunkShipCount = 0;
 
 
         // keep this it
@@ -119,38 +159,38 @@ public class CoolBot2024 implements BattleShipBot {
         makeGrid();
 
 
-
-        for(int[] arr: targetQueue){
-            System.out.println(Arrays.toString(arr));
-        }
-        System.out.println("\n\n");
-        for (int i = 0; i < 12; i++) {
-            this.targetQueue.remove(0);
-        }
-        for(int[] arr: targetQueue){
-            System.out.println(Arrays.toString(arr));
-        }
-        System.out.println("\n\n");
-
-        System.out.println(remainingShips);
-
-
-        // this is a test thing to remove the smallest item from the list this is for testing only
-        remainingShips.removeIf(e -> e.equals(getMinShipRemaining()));
-        remainingShips.removeIf(e -> e.equals(getMinShipRemaining()));
-        System.out.println(remainingShips);
-
-        System.out.println(Arrays.toString(targetQueue.get(0)));
-
-
-
-        // on ship kill run this to regenerate queue
-        changeGrid();
-
-        //testing stuff
-        for(int[] arr: targetQueue){
-            System.out.println(Arrays.toString(arr));
-        }
+//
+//        for(int[] arr: targetQueue){
+//            System.out.println(Arrays.toString(arr));
+//        }
+//        System.out.println("\n\n");
+//        for (int i = 0; i < 12; i++) {
+//            this.targetQueue.remove(0);
+//        }
+//        for(int[] arr: targetQueue){
+//            System.out.println(Arrays.toString(arr));
+//        }
+//        System.out.println("\n\n");
+//
+//        System.out.println(remainingShips);
+//
+//
+//        // this is a test thing to remove the smallest item from the list this is for testing only
+//        remainingShips.removeIf(e -> e.equals(getMinShipRemaining()));
+//        remainingShips.removeIf(e -> e.equals(getMinShipRemaining()));
+//        System.out.println(remainingShips);
+//
+//        System.out.println(Arrays.toString(targetQueue.get(0)));
+//
+//
+//
+//        // on ship kill run this to regenerate queue
+//        changeGrid();
+//
+//        //testing stuff
+//        for(int[] arr: targetQueue){
+//            System.out.println(Arrays.toString(arr));
+//        }
 
 
 
@@ -168,17 +208,22 @@ public class CoolBot2024 implements BattleShipBot {
         if(!targetQueue.isEmpty()) {
             int[] next = targetQueue.remove(0);
             Point shot = new Point(next[0], next[1]);
-            boolean hit = battleShip.shoot(shot);
 
-            if (hit) {
+            if(!shotTaken.contains(shot)) {
+                boolean hit = battleShip.shoot(shot);
+                shotTaken.add(shot);
 
+                if (hit) {
+                    addTargetHit(shot);
+                }
+
+                updateOnSunkShip();
             }
         }
-
         // Will return true if we hot a ship
 
-
     }// end fireShot()
+
 
 
     /**
