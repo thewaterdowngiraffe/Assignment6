@@ -32,6 +32,8 @@ public class CoolBot2024 implements BattleShipBot {
     private int gameSize;
 
     private int worstGame = 0;
+    private int bestGame = 10000;
+
     private BattleShip2 battleShip;
     private Random random;
 
@@ -51,6 +53,7 @@ public class CoolBot2024 implements BattleShipBot {
     private Set<Point> shotTaken ;
 
     private List<int[]> pastHits;
+    private long time;
 
 
 
@@ -65,6 +68,11 @@ public class CoolBot2024 implements BattleShipBot {
         }
         return 0;
     }
+
+    /**
+     * if not used when project done, delete it.
+     * @return
+     */
     private int getMaxShipRemaining(){
         int Maximum = remainingShips.get(0);
         for (int i = 1; i < remainingShips.size(); i++) {
@@ -74,12 +82,13 @@ public class CoolBot2024 implements BattleShipBot {
         return Maximum;
     }
 
+    /**
+     * this regenerates and optimizes the new grid.
+     */
     private void changeGrid(){
+
         makeGrid();
-
-
         // new grid already made at this point
-
         targetQueue.clear();
         int spacing = getMinShipRemaining();
         for (int i = 0; i < gameSize; i++) {
@@ -108,20 +117,18 @@ public class CoolBot2024 implements BattleShipBot {
             }
 
             for(int point : Keep) {
+
+
                 int[] tmp = new int[]{point,i};
-                boolean added = false;
+
                 int x = 0;
                 for ( ;x < targetQueue.size() && (targetQueue.get(x)[0] < (tmp[0]+1)); ) {
                     x++;
-
-                    //System.out.print(Arrays.toString(tmp)+ " : "+ Arrays.toString(targetQueue.get(x-1)) + " ");
-                    //System.out.println(x);
                 }
                 targetQueue.add(x,tmp);
-                //System.out.print(" ");
             }
-            List<int[]> firstHalf = new ArrayList<int[]>();
-            List<int[]> secondHalf = new ArrayList<int[]>();
+
+
 
 
 
@@ -137,6 +144,7 @@ public class CoolBot2024 implements BattleShipBot {
         //Collections.sort(targetQueue, (x, y)->{
         //    return y[0] - x[0]; // sort by number });
 
+        //saves about 8 shots
         removeIlligalShots();
         //System.out.println(targetQueue.size());
 
@@ -309,6 +317,7 @@ public class CoolBot2024 implements BattleShipBot {
 
 
 
+
         // Need to use a Seed if you want the same results to occur from run to run
         // This is needed if you are trying to improve the performance of your code
 
@@ -329,6 +338,7 @@ public class CoolBot2024 implements BattleShipBot {
 
         // run at start
         makeGrid();
+        time = System.nanoTime();
 
     }// end initialize()
 
@@ -493,6 +503,12 @@ public class CoolBot2024 implements BattleShipBot {
 
         if(!battleShip.allSunk()) {
 
+            if( ((System.nanoTime() - time) / 1000) >=10000000){
+                battleShip.reportResults();
+
+                System.out.println("to much time");
+                exit(-1);
+            }
 
             if (!targetQueue.isEmpty() || (!killQueue.isEmpty() || KillMode) ) {
 
@@ -564,40 +580,10 @@ public class CoolBot2024 implements BattleShipBot {
 
 
                 }
+            }
 
-                // print each match to file for analisis
-                if (battleShip.allSunk()) {
-
-
-                    //try {
-                    //    FileWriter myWriter = new FileWriter("match.csv");
-//
-//
-                    //    for (int[] h : hits) {
-                    //        Point point = new Point(h[0], h[1]);
-                    //        myWriter.write(String.valueOf(point));
-                    //        myWriter.write("\n");
-                    //    }
-//
-                    //    myWriter.close();
-//
-                    //    myWriter = new FileWriter("matchHits.csv");
-//
-                    //    Iterator itr = shotTaken.iterator();
-                    //    while (itr.hasNext()) {
-                    //        Point point = (Point) itr.next();
-                    //        myWriter.write(String.valueOf(point));
-                    //        myWriter.write("\n");
-                    //    }
-//
-//
-                    //    myWriter.close();
-                    //} catch (IOException e) {
-                    //    System.out.println("An error occurred.");
-                    //    e.printStackTrace();
-                    //}
-                }
-
+            if (bestGame > shotTaken.size() && battleShip.allSunk()){
+                bestGame = shotTaken.size();
             }
             if (worstGame < shotTaken.size() && battleShip.allSunk()){
                 worstGame = shotTaken.size();
@@ -660,6 +646,6 @@ public class CoolBot2024 implements BattleShipBot {
      */
     @Override
     public String getAuthors() {
-        return "Mark Yendt (CSAIT Professor\nLuca Quacquarelli (COMP-10205 Student\nKeegan (COMP-10205 Student)";
+        return "Mark Yendt (CSAIT Professor\nLuca Quacquarelli (COMP-10205 Student\nKeegan (COMP-10205 Student)\n\nWorst game: " + worstGame +"\nbest game: " + bestGame;
     }// end getAuthors()
 }// end CoolBot2024
