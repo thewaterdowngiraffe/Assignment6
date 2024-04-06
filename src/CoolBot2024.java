@@ -74,8 +74,96 @@ public class CoolBot2024 implements BattleShipBot {
         return Maximum;
     }
 
-
     private void changeGrid(){
+        makeGrid();
+
+
+        // new grid already made at this point
+
+        targetQueue.clear();
+        int spacing = getMinShipRemaining();
+        for (int i = 0; i < gameSize; i++) {
+            List<Integer> points = new ArrayList<Integer>();
+
+            for (int j = i%spacing; j < gameSize; j+= (spacing)) {
+                points.add(0,j);
+            }
+            List<Integer> Keep = new ArrayList<Integer>();
+            int lastPoint = points.get(0);
+
+            for(int point : points) {
+                boolean isValid = true;
+               // System.out.println(lastPoint);
+               // System.out.println(point);
+               // System.out.println("status "+ (lastPoint >= point));
+                for (int j = point; j <= lastPoint && isValid; j++) {
+                    //System.out.print(i+ " "+ j + ": ");
+                    isValid = isTargetValid(new int[]{j, i});
+                    //System.out.println(isValid);
+                }
+                if(isValid){
+                    Keep.add(point);
+                    lastPoint = point;
+                }
+            }
+
+            for(int point : Keep) {
+                int[] tmp = new int[]{point,i};
+                boolean added = false;
+                int x = 0;
+                for ( ;x < targetQueue.size() && (targetQueue.get(x)[0] < (tmp[0]+1)); ) {
+                    x++;
+
+                    //System.out.print(Arrays.toString(tmp)+ " : "+ Arrays.toString(targetQueue.get(x-1)) + " ");
+                    //System.out.println(x);
+                }
+                targetQueue.add(x,tmp);
+                //System.out.print(" ");
+            }
+            List<int[]> firstHalf = new ArrayList<int[]>();
+            List<int[]> secondHalf = new ArrayList<int[]>();
+
+
+
+
+            //System.out.println("]: " +i);
+
+            //System.out.println();
+
+        }
+        //System.out.println(targetQueue.size());
+
+
+        //Collections.sort(targetQueue, (x, y)->{
+        //    return y[0] - x[0]; // sort by number });
+
+        removeIlligalShots();
+        //System.out.println(targetQueue.size());
+
+
+        try {
+            FileWriter myWriter = new FileWriter("targetGrid.csv");
+
+            for (int[] h : targetQueue) {
+                Point point = new Point(h[0], h[1]);
+                myWriter.write(String.valueOf(point));
+                myWriter.write("\n");
+            }
+
+
+            myWriter.close();
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+
+        //Scanner myObj = new Scanner(System.in);
+        //String userName = myObj.nextLine();
+
+        //exit(-1);
+    }
+
+    private void changeGridOld(){
         // this will regenerate the remaining target grid, there is some room for improvement, but im to lazy to do that atm
         // we need to make a prune function to check all queue for repeat moves, these will need to be removed
         boolean resume = true;
@@ -164,35 +252,34 @@ public class CoolBot2024 implements BattleShipBot {
             KillMode = false;
 
 
-            try {
-                FileWriter myWriter = new FileWriter("match.csv");
+            ///try {
+            ///    FileWriter myWriter = new FileWriter("match.csv");
+///
+///
+            ///    for (int[] h : hits) {
+            ///        Point point = new Point(h[0], h[1]);
+            ///        myWriter.write(String.valueOf(point));
+            ///        myWriter.write("\n");
+            ///    }
+///
+            ///    myWriter.close();
+///
+            ///    myWriter = new FileWriter("matchHits.csv");
+///
+            ///    Iterator itr = shotTaken.iterator();
+            ///    while (itr.hasNext()) {
+            ///        Point point = (Point) itr.next();
+            ///        myWriter.write(String.valueOf(point));
+            ///        myWriter.write("\n");
+            ///    }
+///
+///
+            ///    myWriter.close();
+            ///} catch (IOException e) {
+            ///    System.out.println("An error occurred.");
+            ///    e.printStackTrace();
+            ///}
 
-
-                for (int[] h : hits) {
-                    Point point = new Point(h[0], h[1]);
-                    myWriter.write(String.valueOf(point));
-                    myWriter.write("\n");
-                }
-
-                myWriter.close();
-
-                myWriter = new FileWriter("matchHits.csv");
-
-                Iterator itr = shotTaken.iterator();
-                while (itr.hasNext()) {
-                    Point point = (Point) itr.next();
-                    myWriter.write(String.valueOf(point));
-                    myWriter.write("\n");
-                }
-
-
-                myWriter.close();
-            } catch (IOException e) {
-                System.out.println("An error occurred.");
-                e.printStackTrace();
-            }
-            //Scanner myObj = new Scanner(System.in);
-            //String userName = myObj.nextLine();
 
 
 
@@ -218,7 +305,7 @@ public class CoolBot2024 implements BattleShipBot {
         hits = new ArrayList<int[]>();
         battleShip = b;
         gameSize = b.BOARD_SIZE;
-        System.out.println(b);
+        //System.out.println(b);
 
 
 
@@ -243,42 +330,6 @@ public class CoolBot2024 implements BattleShipBot {
         // run at start
         makeGrid();
 
-
-//
-//        for(int[] arr: targetQueue){
-//            System.out.println(Arrays.toString(arr));
-//        }
-//        System.out.println("\n\n");
-//        for (int i = 0; i < 12; i++) {
-//            this.targetQueue.remove(0);
-//        }
-//        for(int[] arr: targetQueue){
-//            System.out.println(Arrays.toString(arr));
-//        }
-//        System.out.println("\n\n");
-//
-//        System.out.println(remainingShips);
-//
-//
-//        // this is a test thing to remove the smallest item from the list this is for testing only
-//        remainingShips.removeIf(e -> e.equals(getMinShipRemaining()));
-//        remainingShips.removeIf(e -> e.equals(getMinShipRemaining()));
-//        System.out.println(remainingShips);
-//
-//        System.out.println(Arrays.toString(targetQueue.get(0)));
-//
-//
-//
-//        // on ship kill run this to regenerate queue
-//        changeGrid();
-//
-//        //testing stuff
-        //for(int[] arr: targetQueue){
-        //    System.out.println(Arrays.toString(arr));
-        //}
-
-
-
     }// end initialize()
 
 
@@ -288,9 +339,9 @@ public class CoolBot2024 implements BattleShipBot {
 
     private boolean delta(int[] A, int[] B){
         if(A[0]-B[0] == 0)
-            return !(A[1]-B[1] == 1);
+            return (A[1]-B[1] == 1);
         if(A[1]-B[1] == 0)
-            return !(A[0]-B[0] == 1);
+            return (A[0]-B[0] == 1);
         return false;
     }
     private void removeIlligalShots(){
@@ -302,7 +353,7 @@ public class CoolBot2024 implements BattleShipBot {
             boolean remove = false;
             for (int[] hit: hits)
             {
-                //System.out.println("plz no");
+                //System.out.println(Arrays.toString(targetQueue.get(i)) +" vs "+ Arrays.toString(hit) +"remove: "+delta(targetQueue.get(i),hit));
                 if( !remove && delta(targetQueue.get(i),hit)){
                     //System.out.println("crash");
                     targetQueue.remove(i);
@@ -344,28 +395,28 @@ public class CoolBot2024 implements BattleShipBot {
             int[] shipBoundsMin = new int[]{pastHits.get(0)[0],pastHits.get(0)[1]};
             int[] shipBoundsMax = new int[]{pastHits.get(0)[0],pastHits.get(0)[1]};
             // get direction
-            System.out.print("past hit count ");
-            System.out.println(pastHits.size());
+            //System.out.print("past hit count ");
+            //System.out.println(pastHits.size());
             for(int[] shots: pastHits ){
-                System.out.println(Arrays.toString(shots));
-                System.out.println(shots[1]);
-                System.out.println(shipBoundsMax[1]);
+                //System.out.println(Arrays.toString(shots));
+                //System.out.println(shots[1]);
+                //System.out.println(shipBoundsMax[1]);
                 if(shipBoundsMin[0] >= shots[0]){
-                    System.out.println("new min x");
+                    //System.out.println("new min x");
                     shipBoundsMin[0] = shots[0];
                 }
                 if(shipBoundsMin[1] >= shots[1]){
-                    System.out.println("new min y");
+                    //System.out.println("new min y");
                     shipBoundsMin[1] = shots[1];
                 }
                 if(shipBoundsMax[0] <= shots[0]){
                     shipBoundsMax[0] = shots[0];
-                    System.out.println("new max x");
+                    //System.out.println("new max x");
 
                 }
                 if(shipBoundsMax[1] <= shots[1]){
                     shipBoundsMax[1] = shots[1];
-                    System.out.println("new max y");
+                    //System.out.println("new max y");
 
                 }
             }
@@ -373,18 +424,18 @@ public class CoolBot2024 implements BattleShipBot {
             int xShift = shipBoundsMax[0]-shipBoundsMin[0] == 0? 0 : 1;
             int yShift = shipBoundsMax[1]-shipBoundsMin[1] == 0? 0 : 1;
             // then add one target to the front and end of the boat
-            System.out.println("shifts");
-            System.out.println(xShift);
-            System.out.println(yShift);
-            System.out.println(Arrays.toString(shipBoundsMax));
-            System.out.println(Arrays.toString(shipBoundsMin));
+            //System.out.println("shifts");
+            //System.out.println(xShift);
+            //System.out.println(yShift);
+            //System.out.println(Arrays.toString(shipBoundsMax));
+            //System.out.println(Arrays.toString(shipBoundsMin));
             Point tmp = new Point(shipBoundsMax[0] - xShift,shipBoundsMax[1]-yShift);
 
-            System.out.print("stats: ");
-            System.out.print(isPointValid(shipBoundsMax[0] - xShift,shipBoundsMax[1] - yShift));
-            System.out.print(" " );
-            System.out.println(!shotTaken.contains(new Point(shipBoundsMin[0] - xShift,shipBoundsMin[1] - yShift)));
-            System.out.println(tmp);
+            //System.out.print("stats: ");
+            //System.out.print(isPointValid(shipBoundsMax[0] - xShift,shipBoundsMax[1] - yShift));
+            //System.out.print(" " );
+            //System.out.println(!shotTaken.contains(new Point(shipBoundsMin[0] - xShift,shipBoundsMin[1] - yShift)));
+            //System.out.println(tmp);
 
             if(isPointValid(shipBoundsMax[0] + xShift,shipBoundsMax[1]+yShift) && !shotTaken.contains(new Point(shipBoundsMax[0] + xShift,shipBoundsMax[1]+yShift))) {
                 //targetQueue.add(0,new int[]{nextX, nextY});
@@ -396,20 +447,20 @@ public class CoolBot2024 implements BattleShipBot {
             }
             if(killQueue.isEmpty()){
                 for(Point x: shotTaken){
-                    System.out.println(x);
+                    //System.out.println(x);
                 }
-                System.out.println(battleShip.numberOfShipsSunk());
-                System.out.println(killQueue.size());
-                System.out.println("problem with the bounds");
+               //System.out.println(battleShip.numberOfShipsSunk());
+               //System.out.println(killQueue.size());
+               //System.out.println("problem with the bounds");
                 exit(-1);
             }
             // then remove shots that have already been taken.
         }
-        System.out.println("killQueue");
-        System.out.println(battleShip.numberOfShipsSunk());
-        for(int[] k: killQueue){
-            System.out.println(Arrays.toString(k));
-        }
+        //System.out.println("killQueue");
+        //System.out.println(battleShip.numberOfShipsSunk());
+        //for(int[] k: killQueue){
+        //    System.out.println(Arrays.toString(k));
+        //}
         // then return the first item of the queue.
         return killQueue.remove(0);
     }
@@ -425,7 +476,7 @@ public class CoolBot2024 implements BattleShipBot {
             next = targetQueue.remove(0);
             shot = new Point(next[0], next[1]);
         }
-        System.out.println(shot);
+        //System.out.println(shot);
         return next;
     }
     /**
@@ -437,8 +488,8 @@ public class CoolBot2024 implements BattleShipBot {
     @Override
     public void fireShot() {
 
-        System.out.print("ahhhhhhhhhh: ");
-        System.out.println(battleShip.numberOfShipsSunk());
+        //System.out.print("ahhhhhhhhhh: ");
+        //System.out.println(battleShip.numberOfShipsSunk());
 
         if(!battleShip.allSunk()) {
 
@@ -450,17 +501,17 @@ public class CoolBot2024 implements BattleShipBot {
 
 
                 if (!KillMode) {
-                    System.out.print("walk mode");
-                    System.out.println(targetQueue.size());
+                    //System.out.print("walk mode");
+                    //System.out.println(targetQueue.size());
                     // this walks the map
                     next = findShips();
-                    System.out.println(targetQueue.size());
+                    //System.out.println(targetQueue.size());
 
 
 
                 } else {
                     //this is kill mode
-                    System.out.println("kill mode");
+                    //System.out.println("kill mode");
 
                     next = killWalk(new Point(pastHits.get(0)[0], pastHits.get(0)[1]));
                     //System.out.println(Arrays.toString(next));
@@ -479,15 +530,15 @@ public class CoolBot2024 implements BattleShipBot {
                 lastShot = next;
                 boolean hit = battleShip.shoot(shot);
 
-                System.out.print("shoot: ");
-                System.out.println(Arrays.toString(next));
+                //System.out.print("shoot: ");
+                //System.out.println(Arrays.toString(next));
 
 
                 //System.out.println("waho");
 
 
                 shotTaken.add(shot);
-                System.out.println(hit);
+                //System.out.println(hit);
                 if (hit) {
 
                     //System.out.println("death");
@@ -518,40 +569,42 @@ public class CoolBot2024 implements BattleShipBot {
                 if (battleShip.allSunk()) {
 
 
-                    try {
-                        FileWriter myWriter = new FileWriter("match.csv");
-
-
-                        for (int[] h : hits) {
-                            Point point = new Point(h[0], h[1]);
-                            myWriter.write(String.valueOf(point));
-                            myWriter.write("\n");
-                        }
-
-                        myWriter.close();
-
-                        myWriter = new FileWriter("matchHits.csv");
-
-                        Iterator itr = shotTaken.iterator();
-                        while (itr.hasNext()) {
-                            Point point = (Point) itr.next();
-                            myWriter.write(String.valueOf(point));
-                            myWriter.write("\n");
-                        }
-
-
-                        myWriter.close();
-                    } catch (IOException e) {
-                        System.out.println("An error occurred.");
-                        e.printStackTrace();
-                    }
+                    //try {
+                    //    FileWriter myWriter = new FileWriter("match.csv");
+//
+//
+                    //    for (int[] h : hits) {
+                    //        Point point = new Point(h[0], h[1]);
+                    //        myWriter.write(String.valueOf(point));
+                    //        myWriter.write("\n");
+                    //    }
+//
+                    //    myWriter.close();
+//
+                    //    myWriter = new FileWriter("matchHits.csv");
+//
+                    //    Iterator itr = shotTaken.iterator();
+                    //    while (itr.hasNext()) {
+                    //        Point point = (Point) itr.next();
+                    //        myWriter.write(String.valueOf(point));
+                    //        myWriter.write("\n");
+                    //    }
+//
+//
+                    //    myWriter.close();
+                    //} catch (IOException e) {
+                    //    System.out.println("An error occurred.");
+                    //    e.printStackTrace();
+                    //}
                 }
 
-            } else if (worstGame < shotTaken.size()){
+            }
+            if (worstGame < shotTaken.size() && battleShip.allSunk()){
                 worstGame = shotTaken.size();
                 for (int[] item : killQueue) {
                     System.out.println(Arrays.toString(item));
                 }
+                System.out.println(shotTaken.size());
                 System.out.println(battleShip.numberOfShipsSunk());
                 System.out.println(battleShip.getShipSizes().length);
                 System.out.println(remainingShips);
@@ -567,7 +620,22 @@ public class CoolBot2024 implements BattleShipBot {
                         myWriter.write(String.valueOf(point));
                         myWriter.write("\n");
                     }
+
+
+
                     myWriter.close();
+                    myWriter = new FileWriter("shotTaken.csb");
+
+                    for (int[] h : hits) {
+                        Point point = new Point(h[0], h[1]);
+                        myWriter.write(String.valueOf(point));
+                        myWriter.write("\n");
+                    }
+//
+//
+                    myWriter.close();
+
+
                 } catch (IOException e) {
                     System.out.println("An error occurred.");
                     e.printStackTrace();
@@ -575,7 +643,7 @@ public class CoolBot2024 implements BattleShipBot {
 
                 System.out.println("worst game?");
                 System.out.println(battleShip.allSunk());
-                exit(-1);
+                //exit(-1);
                 //System.out.println("error");
             }
         }
