@@ -87,11 +87,11 @@ public class CoolBot2024 implements BattleShipBot {
      */
     private void changeGrid(){
 
-        makeGrid();
+        //makeGrid();
         // new grid already made at this point
         targetQueue.clear();
         int spacing = getMinShipRemaining();
-        for (int i = 0; i < gameSize; i++) {
+        for (int i = 0; i <= gameSize; i++) {
             List<Integer> points = new ArrayList<Integer>();
 
             for (int j = i%spacing; j < gameSize; j+= (spacing)) {
@@ -107,7 +107,7 @@ public class CoolBot2024 implements BattleShipBot {
                // System.out.println("status "+ (lastPoint >= point));
                 for (int j = point; j <= lastPoint && isValid; j++) {
                     //System.out.print(i+ " "+ j + ": ");
-                    isValid = isTargetValid(new int[]{j, i});
+                    isValid = isTargetValid(new int[]{j, i-1});
                     //System.out.println(isValid);
                 }
                 if(isValid){
@@ -117,35 +117,24 @@ public class CoolBot2024 implements BattleShipBot {
             }
 
             for(int point : Keep) {
-
-
-                int[] tmp = new int[]{point,i};
+                int[] tmp = new int[]{point,i-1};
 
                 int x = 0;
                 for ( ;x < targetQueue.size() && (targetQueue.get(x)[0] < (tmp[0]+1)); ) {
                     x++;
                 }
                 targetQueue.add(x,tmp);
+
+
             }
 
 
-
-
-
-
-            //System.out.println("]: " +i);
-
-            //System.out.println();
-
         }
-        //System.out.println(targetQueue.size());
-
-
-        //Collections.sort(targetQueue, (x, y)->{
-        //    return y[0] - x[0]; // sort by number });
 
         //saves about 8 shots
+        System.out.print("queue: " + targetQueue.size()+" -> ");
         removeIlligalShots();
+        System.out.println(targetQueue.size());
         //System.out.println(targetQueue.size());
 
 
@@ -171,43 +160,12 @@ public class CoolBot2024 implements BattleShipBot {
         //exit(-1);
     }
 
-    private void changeGridOld(){
-        // this will regenerate the remaining target grid, there is some room for improvement, but im to lazy to do that atm
-        // we need to make a prune function to check all queue for repeat moves, these will need to be removed
-        boolean resume = true;
-        int spacing = getMinShipRemaining();
-        //System.out.println("death to me ");
-        //System.out.println(battleShip.allSunk());
-        //System.out.println( );
-        int[] nextshot = lastShot;
-        if(!targetQueue.isEmpty()){
-             nextshot = targetQueue.get(0);
-        }
-        //System.out.println("death to me jl");
 
-        targetQueue.clear();
-        nextshot[0] = nextshot[0]-(spacing-1) >= 0? (nextshot[0]-(spacing-1))%spacing: 0;
-
-        nextshot[0] = nextshot[0]-(spacing-1) >= 0? (nextshot[0]-1): 0;
-
-        for (int i = nextshot[0]; i < gameSize; i++) {
-            int target = resume?
-                    nextshot[1] - (spacing-1) >=0 ?  nextshot[1] - (spacing-1): 0
-                    :
-                    i%spacing;
-            resume = false;
-
-            for (int j = target; j < gameSize; j+= (spacing)) {
-                int[] tmp = new int[]{i,j};
-                this.targetQueue.add(tmp);
-            }
-        }
-    }
     private void makeGrid(){
         int spacing = getMinShipRemaining();
-        for (int i = 0; i < gameSize; i++) {
+        for (int i = 0; i <= gameSize; i++) {
             for (int j = i%spacing; j < gameSize; j+= (spacing)) {
-                int[] tmp = new int[]{i,j};
+                int[] tmp = new int[]{i-1,j};
                 //this.targetQueue.add(tmp);
 
                 if(isTargetValid(tmp)) {
@@ -258,38 +216,6 @@ public class CoolBot2024 implements BattleShipBot {
             pastHits.clear();
             killQueue.clear();
             KillMode = false;
-
-
-            ///try {
-            ///    FileWriter myWriter = new FileWriter("match.csv");
-///
-///
-            ///    for (int[] h : hits) {
-            ///        Point point = new Point(h[0], h[1]);
-            ///        myWriter.write(String.valueOf(point));
-            ///        myWriter.write("\n");
-            ///    }
-///
-            ///    myWriter.close();
-///
-            ///    myWriter = new FileWriter("matchHits.csv");
-///
-            ///    Iterator itr = shotTaken.iterator();
-            ///    while (itr.hasNext()) {
-            ///        Point point = (Point) itr.next();
-            ///        myWriter.write(String.valueOf(point));
-            ///        myWriter.write("\n");
-            ///    }
-///
-///
-            ///    myWriter.close();
-            ///} catch (IOException e) {
-            ///    System.out.println("An error occurred.");
-            ///    e.printStackTrace();
-            ///}
-
-
-
 
         }
     }
@@ -378,7 +304,7 @@ public class CoolBot2024 implements BattleShipBot {
 
 
     private void addTargetHit(Point shot) {
-        int[][] shotDirections = {{1,0}, {0,-1}, {0,1},{-1,0}};
+        int[][] shotDirections = {{-1,0}, {0,1}, {0,-1},{1,0}};
         for (int[] direction : shotDirections) {
             int nextX = shot.x + direction[0];
             int nextY = shot.y + direction[1];
@@ -473,6 +399,39 @@ public class CoolBot2024 implements BattleShipBot {
         //}
         // then return the first item of the queue.
         return killQueue.remove(0);
+    }
+
+    /**
+     * only call if this is the last option
+     */
+
+    private void fallback(){
+        int gap = getMaxShipRemaining();
+        boolean needsShot = false;
+
+        for (int x = gap; x <gameSize&& !needsShot; x++) {
+            for (int y = gap; y < gameSize&& !needsShot; y++) {
+
+
+                int target = 0;
+                for (int spots = x - gap; spots <x && !needsShot; spots++) {
+                    needsShot = isPointValid(spots,y);
+                    target = spots;
+                }
+                if(needsShot){
+                    targetQueue.add(new int[]{target,y});
+                }
+                for (int spots = y - gap; spots <y && !needsShot; spots++) {
+                    needsShot = isPointValid(x,spots);
+                    target = spots;
+                }
+                if(needsShot){
+                    targetQueue.add(new int[]{x,target});
+                }
+            }
+            // idk why
+            Collections.shuffle(targetQueue);
+        }
     }
 
     private int[] findShips(){
@@ -577,9 +536,75 @@ public class CoolBot2024 implements BattleShipBot {
 
                     updateOnSunkShip();
                     //System.out.println("womp");
-
-
                 }
+            }
+            else{
+                System.out.println("out of targets");
+                fallback();
+                int[] next = {0, 0};
+                Point shot;
+                next = targetQueue.remove(0);
+                shot = new Point(next[0], next[1]);
+                lastShot = next;
+                boolean hit = battleShip.shoot(shot);
+                shotTaken.add(shot);
+                if (hit) {
+                    hits.add(next);
+                    removeIlligalShots();
+                }
+                //add a thing to track pervious shot, if it was a hit, we have a direction to go in
+                if (!battleShip.allSunk()) {
+                    if (hit) {
+                        KillMode = true;
+                        //killMode(shot);
+                        pastHits.add(0, next);
+                    }
+                    updateOnSunkShip();
+                    //System.out.println("womp");
+                }
+
+
+
+
+
+                System.out.println(targetQueue);
+                System.out.println(killQueue);
+                System.out.println(KillMode);
+                System.out.println(Arrays.toString(battleShip.getShipSizes()));
+
+                Iterator itr = shotTaken.iterator();
+                try {
+                    FileWriter myWriter = new FileWriter("filename.txt");
+                    while (itr.hasNext()) {
+                        Point point = (Point) itr.next();
+                        myWriter.write(String.valueOf(point));
+                        myWriter.write("\n");
+                    }
+
+
+
+                    myWriter.close();
+                    myWriter = new FileWriter("shotTaken.csb");
+
+                    for (int[] h : hits) {
+                        Point point = new Point(h[0], h[1]);
+                        myWriter.write(String.valueOf(point));
+                        myWriter.write("\n");
+                    }
+//
+//
+                    myWriter.close();
+
+
+                } catch (IOException e) {
+                    System.out.println("An error occurred.");
+                    e.printStackTrace();
+                }
+
+
+
+
+
             }
 
             if (bestGame > shotTaken.size() && battleShip.allSunk()){
