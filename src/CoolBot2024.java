@@ -1,19 +1,16 @@
-
 import battleship.*;
-
 import java.awt.Point;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.*;
-
 import static java.lang.System.exit;
 
 /**
- * <h1></h1>
+ * <h1>Battleship Strategy</h1>
  *
  * <p>
- *  A Sample random shooter - Takes no precaution on double shooting and has no strategy once
- *  a ship is hit - This is not a good solution to the problem!
+ *  The CoolBot2024 program in a statistical bot for playing a modified version of the classic battleship game.
+ *  The game is designed to play the battleship game on a 15x15 grid, And it searches for and destroys ships without wasting shots.
+ *  The bot can adjust its strategy based on the situation to focus on areas around successful hits and switches tactics if initial plans don't workout.
+ *  The bot also keeps track of its performance and make sure it plays within the set time limit.
  * </p>
  *
  * <p>
@@ -29,614 +26,511 @@ import static java.lang.System.exit;
  */
 
 public class CoolBot2024 implements BattleShipBot {
+
+    /** Holds the size of the game board. **/
     private int gameSize;
 
+    /** Tracks the worst game performance based on the shots taken. **/
     private int worstGame = 0;
+
+    /** Tracks the best game performance based on the shots taken. **/
     private int bestGame = 10000;
 
+    /** An instant of the battleship. **/
     private BattleShip2 battleShip;
+
+    /** For generating random values if needed. **/
     private Random random;
 
+    /** Counter for the number of ships sunk. **/
     private int sunkShipCount;
 
+    /** Keep track of the sizes of remaining ships. **/
     private List<Integer> remainingShips;
 
-    private List<int[]> targetQueue ;
-    private List<int[]> killQueue ;
+    /** Queue for target points to shoot at. **/
+    private List<int[]> targetQueue;
 
-    // delete the hits, its for testing
+    /** Queue for targets in the kill mode. **/
+    private List<int[]> killQueue;
+
+    /** delete the hits, It's for testing **/
     private List<int[]> hits;
 
-
+    /** This tracks the last shot made. **/
     private int[] lastShot;
+
+    /** This is a flag to indicate if the bot is in kill mode. **/
     private boolean KillMode;
+
+    /** To make sure, we don't exceed the time limits. **/
     private Set<Point> shotTaken ;
 
+    /** To keep track of the past hits. **/
     private List<int[]> pastHits;
+
+    /** Time tracking for the execution time limits. **/
     private long time;
 
 
-
+    /**
+     * The getMinShipRemaining method determines the minimum size among the remaining ships.
+     * @return The size of the smallest remaining ship.
+     */
     private int getMinShipRemaining(){
-        if (!remainingShips.isEmpty()){
+        if (!remainingShips.isEmpty()) {
             int minimum = remainingShips.get(0);
             for (int i = 1; i < remainingShips.size(); i++) {
-                if (minimum > remainingShips.get(i))
+                if (minimum > remainingShips.get(i)) {
                     minimum = remainingShips.get(i);
-            }
+                }// end if() #1
+            }// end for loop()
             return minimum;
-        }
+        }// end if() #2
         return 0;
-    }
+    }// end getMinShipRemaining()
+
 
     /**
-     * if not used when project done, delete it.
-     * @return
+     * The getMaxShipRemaining method determines the maximum size among the remaining ships.
+     * @return The size of the largest remaining ship.
      */
     private int getMaxShipRemaining(){
         int Maximum = remainingShips.get(0);
         for (int i = 1; i < remainingShips.size(); i++) {
-            if (Maximum < remainingShips.get(i))
+            if (Maximum < remainingShips.get(i)) {
                 Maximum = remainingShips.get(i);
-        }
+            }// end if()
+        }// end for loop()
         return Maximum;
-    }
+    }// getMaxShipRemaining()
+
 
     /**
-     * this regenerates and optimizes the new grid.
+     * The changeGrid method regenerates the grid based on the smallest remaining ship size.
+     * The method also clears and repopulates the targetQueue.
      */
     private void changeGrid(){
-
-        makeGrid();
-        // new grid already made at this point
+        // Clear's existing targets from the queue.
         targetQueue.clear();
+        // Determines the spacing based on the smallest.
         int spacing = getMinShipRemaining();
-        for (int i = 0; i < gameSize; i++) {
-            List<Integer> points = new ArrayList<Integer>();
 
+        // Iterate over to the grid with adjusted spacing.
+        for (int i = 0; i <= gameSize; i++) {
+            List<Integer> points = new ArrayList<>();
+
+            // Loop to collect potential points based on spacing.
             for (int j = i%spacing; j < gameSize; j+= (spacing)) {
                 points.add(0,j);
-            }
-            List<Integer> Keep = new ArrayList<Integer>();
+            }// end for loop() #2
+
+            // To store valid points.
+            List<Integer> Keep = new ArrayList<>();
+            // To keep track of the last valid point for comparison.
             int lastPoint = points.get(0);
 
+            // This is to validate points to make sure they follow the game rules.
             for(int point : points) {
                 boolean isValid = true;
-               // System.out.println(lastPoint);
-               // System.out.println(point);
-               // System.out.println("status "+ (lastPoint >= point));
+                // Checks each point until a nonvalid one is found.
                 for (int j = point; j <= lastPoint && isValid; j++) {
-                    //System.out.print(i+ " "+ j + ": ");
-                    isValid = isTargetValid(new int[]{j, i});
-                    //System.out.println(isValid);
-                }
+                    isValid = isTargetValid(new int[]{j, i-1});
+                }// end for loop() #4
                 if(isValid){
                     Keep.add(point);
                     lastPoint = point;
-                }
-            }
+                }// end if()
+            }// end for loop() #3
 
+            // Iterate to add valid points to the targetQueue.
             for(int point : Keep) {
+                int[] tmp = new int[]{point,i-1};
 
-
-                int[] tmp = new int[]{point,i};
-
+                // Sort into the target queue based on the X coordinate.
                 int x = 0;
                 for ( ;x < targetQueue.size() && (targetQueue.get(x)[0] < (tmp[0]+1)); ) {
                     x++;
-                }
+                }// end for loop() #5
                 targetQueue.add(x,tmp);
-            }
+            }// end for loop() #6
+        }// end for loop() #1
+        // This is to clean up cues from illegal Shots.
+        removeIllegalShots();
+    }// end changeGrid()
 
 
-
-
-
-
-            //System.out.println("]: " +i);
-
-            //System.out.println();
-
-        }
-        //System.out.println(targetQueue.size());
-
-
-        //Collections.sort(targetQueue, (x, y)->{
-        //    return y[0] - x[0]; // sort by number });
-
-        //saves about 8 shots
-        removeIlligalShots();
-        //System.out.println(targetQueue.size());
-
-
-        try {
-            FileWriter myWriter = new FileWriter("targetGrid.csv");
-
-            for (int[] h : targetQueue) {
-                Point point = new Point(h[0], h[1]);
-                myWriter.write(String.valueOf(point));
-                myWriter.write("\n");
-            }
-
-
-            myWriter.close();
-        } catch (IOException e) {
-            System.out.println("An error occurred.");
-            e.printStackTrace();
-        }
-
-        //Scanner myObj = new Scanner(System.in);
-        //String userName = myObj.nextLine();
-
-        //exit(-1);
-    }
-
-    private void changeGridOld(){
-        // this will regenerate the remaining target grid, there is some room for improvement, but im to lazy to do that atm
-        // we need to make a prune function to check all queue for repeat moves, these will need to be removed
-        boolean resume = true;
-        int spacing = getMinShipRemaining();
-        //System.out.println("death to me ");
-        //System.out.println(battleShip.allSunk());
-        //System.out.println( );
-        int[] nextshot = lastShot;
-        if(!targetQueue.isEmpty()){
-             nextshot = targetQueue.get(0);
-        }
-        //System.out.println("death to me jl");
-
-        targetQueue.clear();
-        nextshot[0] = nextshot[0]-(spacing-1) >= 0? (nextshot[0]-(spacing-1))%spacing: 0;
-
-        nextshot[0] = nextshot[0]-(spacing-1) >= 0? (nextshot[0]-1): 0;
-
-        for (int i = nextshot[0]; i < gameSize; i++) {
-            int target = resume?
-                    nextshot[1] - (spacing-1) >=0 ?  nextshot[1] - (spacing-1): 0
-                    :
-                    i%spacing;
-            resume = false;
-
-            for (int j = target; j < gameSize; j+= (spacing)) {
-                int[] tmp = new int[]{i,j};
-                this.targetQueue.add(tmp);
-            }
-        }
-    }
+    /**
+     * The makeGrid populates the initial grid based on game size and ship sizes.
+     */
     private void makeGrid(){
         int spacing = getMinShipRemaining();
         for (int i = 0; i < gameSize; i++) {
             for (int j = i%spacing; j < gameSize; j+= (spacing)) {
-                int[] tmp = new int[]{i,j};
-                //this.targetQueue.add(tmp);
+                int[] tmp = new int[]{i-1,j};
 
                 if(isTargetValid(tmp)) {
                     targetQueue.add(tmp);
-                }
-            }
-        }
+                }// end if()
+            }// end for loop() #2
+        }// end for loop() #1
     }// end makeGrid()
 
+
+    /**
+     * The isTargetValid method checks if the target is valid within the game board and not previously attempted.
+     * @param tmp int[] An array containing the X and Y coordinates of the target.
+     * @return True if the target is valid and not attempted and false otherwise.
+     */
     private boolean isTargetValid(int[] tmp) {
         Point shot = new Point(tmp[0], tmp[1]);
         return isPointValid(shot.x, shot.y) && !shortAttempted(shot);
     }// end isTargetValid()
 
+
+    /**
+     * The shortAttempted Checks if a shot has been previously attempted at the point.
+     * @param shot Point The point representing the target location.
+     * @return True if the shot was previously attempted and false otherwise.
+     */
     private boolean shortAttempted(Point shot) {
         return shotTaken.contains(shot);
     }// end shotAttempted()
 
 
+    /**
+     * The isPointValid Method checks if a point is within the game board boundaries.
+     * @param x int The X coordinate of the point.
+     * @param y int The Y coordinate of the point.
+     * @return True if the point is within the boundaries and false otherwise.
+     */
     private boolean isPointValid(int x, int y) {
-
         return (x >= 0 && x < gameSize && y >= 0 && y < gameSize);
     }// end isPointValid()
 
 
-
-
+    /**
+     * The updateOnSunkShip Method updates the game state on a shrinking ship.
+     * The method also handles the cleanup and state transition.
+     */
     private void updateOnSunkShip() {
+        // This is to check if the number of sunk ships has increased.
         int shrinkCount = battleShip.numberOfShipsSunk();
         if (shrinkCount > sunkShipCount) {
             sunkShipCount = shrinkCount;
+
+            // This is to remove recently sunk ships based on the size of past hits.
             boolean removed = false;
-            //System.out.println(remainingShips.size());
-
             for (int i = 0; i < remainingShips.size(); i++) {
-
-
                 if(remainingShips.get(i) == pastHits.size() && !removed){
                     remainingShips.remove(i);
                     removed = true;
-                }
-            }
-            //System.out.println("wompt");
+                }// end if() #2
+            }// end for loop()
 
+            // Adjusting the targeting grid based on the new ship configuration.
             changeGrid();
-            //System.out.println("wompt");
 
+            // This is just to clear the state for the next round of targeting.
             pastHits.clear();
             killQueue.clear();
             KillMode = false;
-
-
-            ///try {
-            ///    FileWriter myWriter = new FileWriter("match.csv");
-///
-///
-            ///    for (int[] h : hits) {
-            ///        Point point = new Point(h[0], h[1]);
-            ///        myWriter.write(String.valueOf(point));
-            ///        myWriter.write("\n");
-            ///    }
-///
-            ///    myWriter.close();
-///
-            ///    myWriter = new FileWriter("matchHits.csv");
-///
-            ///    Iterator itr = shotTaken.iterator();
-            ///    while (itr.hasNext()) {
-            ///        Point point = (Point) itr.next();
-            ///        myWriter.write(String.valueOf(point));
-            ///        myWriter.write("\n");
-            ///    }
-///
-///
-            ///    myWriter.close();
-            ///} catch (IOException e) {
-            ///    System.out.println("An error occurred.");
-            ///    e.printStackTrace();
-            ///}
-
-
-
-
-        }
-    }
-
+        }// end if() #1
+    }// end updateOnSunkShip()
 
 
     /**
-     * Constructor keeps a copy of the BattleShip instance
-     * Create instances of any Data Structures and initialize any variables here
-     * @param b previously created battleship instance - should be a new game
+     * The initialize method initializes the battleship game state.
+     * @param b BattleShip2 An instance representing the current game.
      */
     @Override
     public void initialize(BattleShip2 b) {
         lastShot =new int[]{0,0};
         KillMode = false;
-        remainingShips = new ArrayList<Integer>();
-        targetQueue = new ArrayList<int[]>();
+        remainingShips = new ArrayList<>();
+        targetQueue = new ArrayList<>();
         shotTaken = new HashSet<>();
-        pastHits = new ArrayList<int[]>();
-        killQueue = new ArrayList<int[]>();
-        hits = new ArrayList<int[]>();
+        pastHits = new ArrayList<>();
+        killQueue = new ArrayList<>();
+        hits = new ArrayList<>();
         battleShip = b;
-        gameSize = b.BOARD_SIZE;
-        //System.out.println(b);
+        gameSize = b.BOARD_SIZE; // Setting the size of the board.
 
-
-
-
-        // Need to use a Seed if you want the same results to occur from run to run
-        // This is needed if you are trying to improve the performance of your code
-
-        random = new Random(0xAAAAAAAA);   // Needed for random shooter - not required for more systematic approaches
+        // A seed for reproducing if needed.
+        random = new Random(0xAAAAAAAA);
         sunkShipCount = 0;
 
-
-        // keep this it
-
+        // Initializes the remaining ships with the size of all ships in the game.
         for(int ship: battleShip.getShipSizes()) {
             remainingShips.add(ship);
-        }
-
-
+        }// end for loop()
+        // Updating the shrunk ships count.
         sunkShipCount = battleShip.numberOfShipsSunk();
 
-
-
-        // run at start
+        // Setting up the initial targeting grid and starting timing for performance measurement.
         makeGrid();
         time = System.nanoTime();
 
     }// end initialize()
 
 
-
-
-
-
+    /**
+     * The delta method checks if two points are adjacent vertical or horizontal.
+     * @param A int[] The first point as an array x,y.
+     * @param B int[] The second point as an array x,y.
+     * @return True if the points are adjacent and false otherwise.
+     */
     private boolean delta(int[] A, int[] B){
-        if(A[0]-B[0] == 0)
-            return (A[1]-B[1] == 1);
-        if(A[1]-B[1] == 0)
-            return (A[0]-B[0] == 1);
+        // horizontal adjacent check.
+        if(A[0]-B[0] == 0) {
+            return (A[1] - B[1] == 1);
+        }// end if() #1
+        // vertical adjacent check.
+        if(A[1]-B[1] == 0) {
+            return (A[0] - B[0] == 1);
+        }// end if() #2
         return false;
-    }
-    private void removeIlligalShots(){
-        //System.out.println(targetQueue.size());
+    }// end delta()
+
+
+    /**
+     * The removeIllegalShots method removes shots from the target queue to avoid illegal placements.
+     */
+    private void removeIllegalShots(){
         for (int i = (targetQueue.size() -1); !targetQueue.isEmpty() && i >= 0  ; i--) {
-            //System.out.println(i);
-            //System.out.println(targetQueue.size());
-
             boolean remove = false;
-            for (int[] hit: hits)
-            {
-                //System.out.println(Arrays.toString(targetQueue.get(i)) +" vs "+ Arrays.toString(hit) +"remove: "+delta(targetQueue.get(i),hit));
+            for (int[] hit: hits) {
                 if( !remove && delta(targetQueue.get(i),hit)){
-                    //System.out.println("crash");
                     targetQueue.remove(i);
-                    //System.out.println("dont");
                     remove= true;
-                }
-            }
-        }
-
-    }
-
+                }// end if()
+            }// end for loop() #2
+        }// end for loop() #1
+    }// end removeIllegalShots()
 
 
+    /**
+     * The addTargetHit Method adds potential target points around a hit for targeting in Kill mode.
+     * @param shot Point The point representing the target location.
+     */
     private void addTargetHit(Point shot) {
-        int[][] shotDirections = {{1,0}, {0,-1}, {0,1},{-1,0}};
+        int[][] shotDirections = {{-1,0}, {0,1}, {0,-1},{1,0}};
         for (int[] direction : shotDirections) {
             int nextX = shot.x + direction[0];
             int nextY = shot.y + direction[1];
             if(isPointValid(nextX, nextY) && !shotTaken.contains(new Point(nextX, nextY))) {
-                //targetQueue.add(0,new int[]{nextX, nextY});
                 killQueue.add(0,new int[]{nextX, nextY});
-            }
-        }
-    }
+            }// end if()
+        }// end for loop()
+    }// end addTargetHit()
 
 
-
+    /**
+     * The killWalk method chooses the next target in kill mode based on analyzing of past hits.
+     * @param shot Point The point representing the target location.
+     * @return The coordinates of the next target in kill mode.
+     */
     private int[] killWalk(Point shot){
-
         //on first hit, get direction of attack.
         if(pastHits.size() == 1){
+            // Add the adjacent points as potential next shots.
             addTargetHit(shot);
-        }
-        else{
+        } else{
+            // This clears the queue for a new start if no more than one hit is found.
             if(pastHits.size() == 2) {
                 killQueue.clear();
-            }
-            // this is after the second hit.
+            }// end if() #1
+            // After the second hit determine the ship boundary box based on hits.
             int[] shipBoundsMin = new int[]{pastHits.get(0)[0],pastHits.get(0)[1]};
             int[] shipBoundsMax = new int[]{pastHits.get(0)[0],pastHits.get(0)[1]};
             // get direction
-            //System.out.print("past hit count ");
-            //System.out.println(pastHits.size());
             for(int[] shots: pastHits ){
-                //System.out.println(Arrays.toString(shots));
-                //System.out.println(shots[1]);
-                //System.out.println(shipBoundsMax[1]);
                 if(shipBoundsMin[0] >= shots[0]){
-                    //System.out.println("new min x");
                     shipBoundsMin[0] = shots[0];
-                }
+                }// end if() #2
                 if(shipBoundsMin[1] >= shots[1]){
-                    //System.out.println("new min y");
                     shipBoundsMin[1] = shots[1];
-                }
+                }// end if() #3
                 if(shipBoundsMax[0] <= shots[0]){
                     shipBoundsMax[0] = shots[0];
-                    //System.out.println("new max x");
-
-                }
+                }// end if() #4
                 if(shipBoundsMax[1] <= shots[1]){
                     shipBoundsMax[1] = shots[1];
-                    //System.out.println("new max y");
+                }// end if() #5
+            }// end for loop()
 
-                }
-            }
-
+            // This calculates potential next shots based on ship position.
             int xShift = shipBoundsMax[0]-shipBoundsMin[0] == 0? 0 : 1;
             int yShift = shipBoundsMax[1]-shipBoundsMin[1] == 0? 0 : 1;
-            // then add one target to the front and end of the boat
-            //System.out.println("shifts");
-            //System.out.println(xShift);
-            //System.out.println(yShift);
-            //System.out.println(Arrays.toString(shipBoundsMax));
-            //System.out.println(Arrays.toString(shipBoundsMin));
-            Point tmp = new Point(shipBoundsMax[0] - xShift,shipBoundsMax[1]-yShift);
-
-            //System.out.print("stats: ");
-            //System.out.print(isPointValid(shipBoundsMax[0] - xShift,shipBoundsMax[1] - yShift));
-            //System.out.print(" " );
-            //System.out.println(!shotTaken.contains(new Point(shipBoundsMin[0] - xShift,shipBoundsMin[1] - yShift)));
-            //System.out.println(tmp);
-
             if(isPointValid(shipBoundsMax[0] + xShift,shipBoundsMax[1]+yShift) && !shotTaken.contains(new Point(shipBoundsMax[0] + xShift,shipBoundsMax[1]+yShift))) {
-                //targetQueue.add(0,new int[]{nextX, nextY});
                 killQueue.add(0,new int[]{shipBoundsMax[0] + xShift,shipBoundsMax[1]+yShift});
-            }
-            else if(isPointValid(shipBoundsMin[0] - xShift,shipBoundsMin[1]-yShift) && !shotTaken.contains(new Point(shipBoundsMin[0] - xShift,shipBoundsMin[1]-yShift))) {
-                //targetQueue.add(0,new int[]{nextX, nextY});
+            } else if(isPointValid(shipBoundsMin[0] - xShift,shipBoundsMin[1]-yShift) && !shotTaken.contains(new Point(shipBoundsMin[0] - xShift,shipBoundsMin[1]-yShift))) {
                 killQueue.add(0,new int[]{shipBoundsMin[0] - xShift,shipBoundsMin[1]-yShift});
-            }
+            }// end else if()
+            // Exit if no valid shots are found.
             if(killQueue.isEmpty()){
-                for(Point x: shotTaken){
-                    //System.out.println(x);
-                }
-               //System.out.println(battleShip.numberOfShipsSunk());
-               //System.out.println(killQueue.size());
-               //System.out.println("problem with the bounds");
                 exit(-1);
-            }
-            // then remove shots that have already been taken.
-        }
-        //System.out.println("killQueue");
-        //System.out.println(battleShip.numberOfShipsSunk());
-        //for(int[] k: killQueue){
-        //    System.out.println(Arrays.toString(k));
-        //}
+            }// end if() #6
+        }// end else
+
         // then return the first item of the queue.
         return killQueue.remove(0);
-    }
+    }// end killWalk()
 
-    private int[] findShips(){
-        // this does the walking of the map
+
+    /**
+     * The fallback Method is a fallback strategy for determining the next shot when the standard logic doesn't work.
+     */
+    private void fallback() {
+        // Finding the largest remaining ship.
+        int gap = getMaxShipRemaining();
+
+        // Loop to get potential starting points based on the gap.
+        boolean needsShot = false;
+        for (int x = gap; x <gameSize&& !needsShot; x++) {
+            for (int y = gap; y < gameSize&& !needsShot; y++) {
+
+                // Checking the horizontal and vertical possibilities from each starting point.
+                int target = 0;
+                for (int spots = x - gap; spots <x && !needsShot; spots++) {
+                    needsShot = isPointValid(spots,y);
+                    target = spots;
+                }// end for loop() #3
+
+                // Only Process the vertical check if no horizontal shots are found.
+                if(needsShot){
+                    targetQueue.add(new int[]{target,y});
+                }// end if() #1
+                for (int spots = y - gap; spots <y && !needsShot; spots++) {
+                    needsShot = isPointValid(x,spots);
+                    target = spots;
+                }// end for loop() #4
+                if(needsShot){
+                    targetQueue.add(new int[]{x,target});
+                }// end if() #2
+            }// end for loop() #2
+            // Randomize targetQueue to avoid predictability.
+            Collections.shuffle(targetQueue);
+        }// end for loop() #1
+    }// end fallback()
+
+
+    /**
+     * The findShips method selects the next target from the target queue.
+     * The method ensures shots are chosen from the available and unattempted targets.
+     * @return The coordinates of the next shot.
+     */
+    private int[] findShips() {
+        // This is to retrieve and validate the next target from the queue.
         int[] next = targetQueue.remove(0);
-
         Point shot = new Point(next[0], next[1]);
 
-
+        // Skipping over already attempted shots.
         while (shotTaken.contains(shot)){
             next = targetQueue.remove(0);
             shot = new Point(next[0], next[1]);
-        }
-        //System.out.println(shot);
+        }// end while loop()
         return next;
-    }
-    /**
-     * Create a random shot and calls the battleship shoot method
-     * Put all logic here (or in other methods called from here)
-     * The BattleShip API will call your code until all ships are sunk
-     */
+    }// end findShips()
 
+
+   /**
+    * The checkTimeLimit Method checks if the execution time exceeds the set limit and if so terminates it.
+    */
+   private void checkTimeLimit() {
+       if( ((System.nanoTime() - time) / 1000) >=10000000){
+           battleShip.reportResults();
+           System.out.println("Exceeded time limit.");
+           exit(-1);
+       }// end if()
+   }// end  checkTimeLimit()
+
+
+    /**
+     * The updateGameScore Method updates the game score after each shot for best and worst games.
+     */
+    private void updateGameScore() {
+        if (bestGame > shotTaken.size() && battleShip.allSunk()){
+            bestGame = shotTaken.size();
+        }// end if() #1
+        if (worstGame < shotTaken.size() && battleShip.allSunk()){
+            worstGame = shotTaken.size();
+        }// end if() #2
+    }// end updateGameScore()
+
+
+    /**
+     * The determineNextShot method determines the next target based on the current mode search or kill.
+     * @return The coordinates of the next shot as an int array.
+     */
+    private int[] determineNextShot() {
+        if (!KillMode) {
+            return findShips();
+        } else {
+            return killWalk(new Point(pastHits.get(0)[0], pastHits.get(0)[1]));
+        }// end else
+    }// end determineNextShot()
+
+
+    /**
+     * The executeAndProcessShot method executes a shot At the determined coordinates and processes the outcome.
+     * The method also updates the game state based on hit or miss.
+     * @param next int[] The coordinates for the next shot.
+     */
+    private void executeAndProcessShot(int[] next) {
+        // Converting the array two Point.
+        Point shot = new Point(next[0], next[1]);
+        //skip shots that have already been made.
+        lastShot = next;
+        boolean hit = battleShip.shoot(shot);
+
+        shotTaken.add(shot);
+
+        // Adding to hit if it was a successful hit.
+        if (hit) {
+            hits.add(next);
+            removeIllegalShots();
+        }// end if() #1
+
+        //add a thing to track pervious shot, if it was a hit, we have a direction to go in.
+        if (!battleShip.allSunk()) {
+            if (hit) {
+                KillMode = true;
+                pastHits.add(0, next);
+            }// end if() #3
+
+            // Checking and updating the game state if ships are sunk.
+            updateOnSunkShip();
+        }// end if() #2
+    }// end executeAndProcessShot()
+
+
+    /**
+     * The fireShot Method executes the game logic for each turn until all ships are sunk.
+     * The method also manages the shot duration, execution and state updates.
+     */
     @Override
     public void fireShot() {
-
-        //System.out.print("ahhhhhhhhhh: ");
-        //System.out.println(battleShip.numberOfShipsSunk());
-
+        // Continue playing the game until all ships have been sunk.
         if(!battleShip.allSunk()) {
-
-            if( ((System.nanoTime() - time) / 1000) >=10000000){
-                battleShip.reportResults();
-
-                System.out.println("to much time");
-                exit(-1);
-            }
-
+            checkTimeLimit();
+            // Determining and executing the next shot if there are targets available.
             if (!targetQueue.isEmpty() || (!killQueue.isEmpty() || KillMode) ) {
-
-                int[] next = {0, 0};
-                Point shot = new Point(next[0], next[1]);
-
-
-                if (!KillMode) {
-                    //System.out.print("walk mode");
-                    //System.out.println(targetQueue.size());
-                    // this walks the map
-                    next = findShips();
-                    //System.out.println(targetQueue.size());
-
-
-
-                } else {
-                    //this is kill mode
-                    //System.out.println("kill mode");
-
-                    next = killWalk(new Point(pastHits.get(0)[0], pastHits.get(0)[1]));
-                    //System.out.println(Arrays.toString(next));
-                }
-
-                shot = new Point(next[0], next[1]);
-
-
-                //skip shots that have already been made
-
-                //System.out.println(shot);
-                //System.out.println("Ejhere");
-                //System.out.println(Arrays.toString(next));
-
-                //System.out.println(shot);
-                lastShot = next;
-                boolean hit = battleShip.shoot(shot);
-
-                //System.out.print("shoot: ");
-                //System.out.println(Arrays.toString(next));
-
-
-                //System.out.println("waho");
-
-
-                shotTaken.add(shot);
-                //System.out.println(hit);
-                if (hit) {
-
-                    //System.out.println("death");
-                    //System.out.println("deathnt");
-
-                    hits.add(next);
-                    removeIlligalShots();
-                }
-
-                //add a thing to track pervious shot, if it was a hit, we have a direction to go in
-                if (!battleShip.allSunk()) {
-
-                    if (hit) {
-
-                        KillMode = true;
-                        //killMode(shot);
-
-                        pastHits.add(0, next);
-                    }
-
-                    updateOnSunkShip();
-                    //System.out.println("womp");
-
-
-                }
-            }
-
-            if (bestGame > shotTaken.size() && battleShip.allSunk()){
-                bestGame = shotTaken.size();
-            }
-            if (worstGame < shotTaken.size() && battleShip.allSunk()){
-                worstGame = shotTaken.size();
-                for (int[] item : killQueue) {
-                    System.out.println(Arrays.toString(item));
-                }
-                System.out.println(shotTaken.size());
-                System.out.println(battleShip.numberOfShipsSunk());
-                System.out.println(battleShip.getShipSizes().length);
-                System.out.println(remainingShips);
-
-                Iterator itr = shotTaken.iterator();
-
-                // check element is present or not. if not loop will
-                // break.
-                try {
-                    FileWriter myWriter = new FileWriter("filename.txt");
-                    while (itr.hasNext()) {
-                        Point point = (Point) itr.next();
-                        myWriter.write(String.valueOf(point));
-                        myWriter.write("\n");
-                    }
-
-
-
-                    myWriter.close();
-                    myWriter = new FileWriter("shotTaken.csb");
-
-                    for (int[] h : hits) {
-                        Point point = new Point(h[0], h[1]);
-                        myWriter.write(String.valueOf(point));
-                        myWriter.write("\n");
-                    }
-//
-//
-                    myWriter.close();
-
-
-                } catch (IOException e) {
-                    System.out.println("An error occurred.");
-                    e.printStackTrace();
-                }
-
-                System.out.println("worst game?");
-                System.out.println(battleShip.allSunk());
-                //exit(-1);
-                //System.out.println("error");
-            }
-        }
-        // Will return true if we hot a ship
-
+                int[] next = determineNextShot();
+                executeAndProcessShot(next);
+            } else {
+                // Use the fallback strategy.
+                fallback();
+                // Execute a fallback shot if the target queue is populated.
+                if (!targetQueue.isEmpty()) {
+                    int[] next = targetQueue.remove(0);
+                    executeAndProcessShot(next);
+                }// end if() #3
+            }// end else
+            // Checking and updating the game state if ships are sunk.
+            updateGameScore();
+        }// end if() #1
     }// end fireShot()
-
 
 
     /**
@@ -646,6 +540,8 @@ public class CoolBot2024 implements BattleShipBot {
      */
     @Override
     public String getAuthors() {
-        return "Mark Yendt (CSAIT Professor\nLuca Quacquarelli (COMP-10205 Student\nKeegan (COMP-10205 Student)\n\nWorst game: " + worstGame +"\nbest game: " + bestGame;
+        return "Mark Yendt (CSAIT Professor\nLuca Quacquarelli (COMP-10205 Student\nKeegan Andrus (COMP-10205 Student)\n\nWorst game: " + worstGame +"\nbest game: " + bestGame;
     }// end getAuthors()
+
+
 }// end CoolBot2024
