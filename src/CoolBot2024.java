@@ -57,9 +57,6 @@ public class CoolBot2024 implements BattleShipBot {
     /** delete the hits, It's for testing **/
     private List<int[]> hits;
 
-    /** This tracks the last shot made. **/
-    private int[] lastShot;
-
     /** This is a flag to indicate if the bot is in kill mode. **/
     private boolean KillMode;
 
@@ -245,7 +242,7 @@ public class CoolBot2024 implements BattleShipBot {
      */
     @Override
     public void initialize(BattleShip2 b) {
-        lastShot =new int[]{0,0};
+
         KillMode = false;
         remainingShips = new ArrayList<>();
         targetQueue = new ArrayList<>();
@@ -314,7 +311,7 @@ public class CoolBot2024 implements BattleShipBot {
      * @param shot Point The point representing the target location.
      */
     private void addTargetHit(Point shot) {
-        int[][] shotDirections = {{-1,0}, {0,1}, {0,-1},{1,0}};
+        int[][] shotDirections = {{-1,0}, {0,1}, {0,-1}, {1,0}};
         for (int[] direction : shotDirections) {
             int nextX = shot.x + direction[0];
             int nextY = shot.y + direction[1];
@@ -481,7 +478,7 @@ public class CoolBot2024 implements BattleShipBot {
         // Converting the array two Point.
         Point shot = new Point(next[0], next[1]);
         //skip shots that have already been made.
-        lastShot = next;
+
         boolean hit = battleShip.shoot(shot);
 
         shotTaken.add(shot);

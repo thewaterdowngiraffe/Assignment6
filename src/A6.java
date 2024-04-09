@@ -14,11 +14,10 @@ public class A6 {
         // All logic must be added to your Bot implementation
         // see fireShot in the ExampleBot class
 
-        final int NUMBEROFGAMES = 1000;
+        final int NUMBEROFGAMES = 10000;
         System.out.println(BattleShip2.getVersion());
         BattleShip2 battleShip = new BattleShip2(NUMBEROFGAMES, new CoolBot2024());
         int [] gameResults = battleShip.run();
-
         // You may add some analysis code to look at all the game scores that are returned in gameResults
         // This can be useful for debugging purposes.
         //System.out.println(Arrays.toString(gameResults));
@@ -28,3 +27,5 @@ public class A6 {
         battleShip.reportResults();
     }
 }
+
+
