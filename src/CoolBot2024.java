@@ -537,7 +537,7 @@ public class CoolBot2024 implements BattleShipBot {
      */
     @Override
     public String getAuthors() {
-        return "Mark Yendt (CSAIT Professor\nLuca Quacquarelli (COMP-10205 Student\nKeegan Andrus (COMP-10205 Student)\n\nWorst game: " + worstGame +"\nbest game: " + bestGame;
+        return "Luca Quacquarelli & Keegan Andrus\n\nWorst game: " + worstGame +"\nbest game: " + bestGame;
     }// end getAuthors()
 
 
