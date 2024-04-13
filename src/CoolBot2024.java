@@ -30,17 +30,9 @@ public class CoolBot2024 implements BattleShipBot {
     /** Holds the size of the game board. **/
     private int gameSize;
 
-    /** Tracks the worst game performance based on the shots taken. **/
-    private int worstGame = 0;
-
-    /** Tracks the best game performance based on the shots taken. **/
-    private int bestGame = 10000;
-
     /** An instant of the battleship. **/
     private BattleShip2 battleShip;
 
-    /** For generating random values if needed. **/
-    private Random random;
 
     /** Counter for the number of ships sunk. **/
     private int sunkShipCount;
@@ -65,9 +57,6 @@ public class CoolBot2024 implements BattleShipBot {
 
     /** To keep track of the past hits. **/
     private List<int[]> pastHits;
-
-    /** Time tracking for the execution time limits. **/
-    private long time;
 
 
     /**
@@ -213,7 +202,7 @@ public class CoolBot2024 implements BattleShipBot {
     private void updateOnSunkShip() {
         // This is to check if the number of sunk ships has increased.
         int shrinkCount = battleShip.numberOfShipsSunk();
-        if (shrinkCount > sunkShipCount) {
+        if (shrinkCount > sunkShipCount && shrinkCount != 6 ) {
             sunkShipCount = shrinkCount;
 
             // This is to remove recently sunk ships based on the size of past hits.
@@ -253,8 +242,6 @@ public class CoolBot2024 implements BattleShipBot {
         battleShip = b;
         gameSize = b.BOARD_SIZE; // Setting the size of the board.
 
-        // A seed for reproducing if needed.
-        random = new Random(0xAAAAAAAA);
         sunkShipCount = 0;
 
         // Initializes the remaining ships with the size of all ships in the game.
@@ -266,7 +253,6 @@ public class CoolBot2024 implements BattleShipBot {
 
         // Setting up the initial targeting grid and starting timing for performance measurement.
         makeGrid();
-        time = System.nanoTime();
 
     }// end initialize()
 
@@ -279,15 +265,16 @@ public class CoolBot2024 implements BattleShipBot {
      */
     private boolean delta(int[] A, int[] B){
         // horizontal adjacent check.
-        if(A[0]-B[0] == 0) {
-            return (A[1] - B[1] == 1);
+        if(A[0]==B[0]) {
+            return (Math.abs(A[1] - B[1]) == 1);
         }// end if() #1
         // vertical adjacent check.
-        if(A[1]-B[1] == 0) {
-            return (A[0] - B[0] == 1);
+        if(A[1]==B[1]) {
+            return (Math.abs(A[0] - B[0]) == 1);
         }// end if() #2
         return false;
     }// end delta()
+
 
 
     /**
@@ -311,7 +298,7 @@ public class CoolBot2024 implements BattleShipBot {
      * @param shot Point The point representing the target location.
      */
     private void addTargetHit(Point shot) {
-        int[][] shotDirections = {{-1,0}, {0,1}, {0,-1}, {1,0}};
+        int[][] shotDirections = {{-1,0}, {0,-1}, {1,0}, {0,1}};
         for (int[] direction : shotDirections) {
             int nextX = shot.x + direction[0];
             int nextY = shot.y + direction[1];
@@ -365,9 +352,6 @@ public class CoolBot2024 implements BattleShipBot {
                 killQueue.add(0,new int[]{shipBoundsMin[0] - xShift,shipBoundsMin[1]-yShift});
             }// end else if()
             // Exit if no valid shots are found.
-            if(killQueue.isEmpty()){
-                exit(-1);
-            }// end if() #6
         }// end else
 
         // then return the first item of the queue.
@@ -379,6 +363,7 @@ public class CoolBot2024 implements BattleShipBot {
      * The fallback Method is a fallback strategy for determining the next shot when the standard logic doesn't work.
      */
     private void fallback() {
+        System.out.println("fallback");
         // Finding the largest remaining ship.
         int gap = getMaxShipRemaining();
 
@@ -431,29 +416,7 @@ public class CoolBot2024 implements BattleShipBot {
     }// end findShips()
 
 
-   /**
-    * The checkTimeLimit Method checks if the execution time exceeds the set limit and if so terminates it.
-    */
-   private void checkTimeLimit() {
-       if( ((System.nanoTime() - time) / 1000) >=10000000){
-           battleShip.reportResults();
-           System.out.println("Exceeded time limit.");
-           exit(-1);
-       }// end if()
-   }// end  checkTimeLimit()
 
-
-    /**
-     * The updateGameScore Method updates the game score after each shot for best and worst games.
-     */
-    private void updateGameScore() {
-        if (bestGame > shotTaken.size() && battleShip.allSunk()){
-            bestGame = shotTaken.size();
-        }// end if() #1
-        if (worstGame < shotTaken.size() && battleShip.allSunk()){
-            worstGame = shotTaken.size();
-        }// end if() #2
-    }// end updateGameScore()
 
 
     /**
@@ -486,19 +449,12 @@ public class CoolBot2024 implements BattleShipBot {
         // Adding to hit if it was a successful hit.
         if (hit) {
             hits.add(next);
-            removeIllegalShots();
+            KillMode = true;
+            pastHits.add(0, next);
+            updateOnSunkShip();
         }// end if() #1
 
-        //add a thing to track pervious shot, if it was a hit, we have a direction to go in.
-        if (!battleShip.allSunk()) {
-            if (hit) {
-                KillMode = true;
-                pastHits.add(0, next);
-            }// end if() #3
 
-            // Checking and updating the game state if ships are sunk.
-            updateOnSunkShip();
-        }// end if() #2
     }// end executeAndProcessShot()
 
 
@@ -510,7 +466,6 @@ public class CoolBot2024 implements BattleShipBot {
     public void fireShot() {
         // Continue playing the game until all ships have been sunk.
         if(!battleShip.allSunk()) {
-            checkTimeLimit();
             // Determining and executing the next shot if there are targets available.
             if (!targetQueue.isEmpty() || (!killQueue.isEmpty() || KillMode) ) {
                 int[] next = determineNextShot();
@@ -524,8 +479,6 @@ public class CoolBot2024 implements BattleShipBot {
                     executeAndProcessShot(next);
                 }// end if() #3
             }// end else
-            // Checking and updating the game state if ships are sunk.
-            updateGameScore();
         }// end if() #1
     }// end fireShot()
 
@@ -537,7 +490,7 @@ public class CoolBot2024 implements BattleShipBot {
      */
     @Override
     public String getAuthors() {
-        return "Luca Quacquarelli & Keegan Andrus\n\nWorst game: " + worstGame +"\nbest game: " + bestGame;
+        return "Luca Quacquarelli & Keegan Andrus";
     }// end getAuthors()
 
 
